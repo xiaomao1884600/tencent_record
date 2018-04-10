@@ -26,6 +26,15 @@ Route::any('tencentyun/asr/call_back', function(Request $request){
     return ['success' => true];
 });
 
+/**
+ * 下载
+ */
+Route::group(['namespace' => 'Record', 'prefix' => 'record'], function(){
+    //下载
+    Route::any('down_load', 'DownLoadController@downLoadRecord');
+});
+
+
 Route::group(['namespace' => 'Record', 'prefix' => 'record'], function(){
 
     //呼出

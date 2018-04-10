@@ -2,18 +2,20 @@
 /**
  * Created by PhpStorm.
  * User: wangwujun
- * Date: 2018/4/9
- * Time: 下午4:27
+ * Date: 2018/4/10
+ * Time: 上午8:44
  */
+
 namespace App\Http\Controllers\Record;
+
 
 use App\Http\Controllers\Controller;
 use App\Service\Exceptions\ApiExceptions;
 use App\Service\Exceptions\Message;
-use App\Service\Record\RecordService;
+use App\Service\Record\DownLoadService;
 use Illuminate\Http\Request;
 
-class RecordController extends Controller
+class DownLoadController extends Controller
 {
     public function __construct()
     {
@@ -21,18 +23,17 @@ class RecordController extends Controller
     }
 
     /**
-     * 呼出
+     * 下载文件
      * @param Request $request
-     * @param RecordService $recordService
+     * @param DownLoadService $downLoadService
      * @return array|mixed
      */
-    public function setCallOut(Request $request, RecordService $recordService)
+    public function downLoadRecord(Request $request, DownLoadService $downLoadService)
     {
         try {
-            return Message::success($recordService->setCallOut(requestData($request)));
+            return Message::success($downLoadService->downLoadRecord(requestData($request)));
         } catch (\Exception $exception) {
             return ApiExceptions::handle($exception);
         }
     }
-
 }
