@@ -9,10 +9,13 @@
 namespace App\Service\Record;
 
 
+use App\Repository\Record\AsrRep;
 use App\Service\Foundation\BaseService;
+use Illuminate\Support\Facades\Request;
 
 class AsrService extends BaseService
 {
+    protected $asrRep;
 
     protected $callBackInfo = '{
     "code": "0",
@@ -26,9 +29,12 @@ class AsrService extends BaseService
 }
 ';
 
-    public function __construct()
+    public function __construct(
+        AsrRep $asrRep
+    )
     {
         parent::__construct();
+        $this->asrRep = $asrRep;
     }
 
     /**
@@ -37,24 +43,84 @@ class AsrService extends BaseService
      */
     public function asrCallBack(array $callBackInfo)
     {
-        $content = json_encode($callBackInfo) . "\n";
-        file_put_contents(public_path('ten_asr_call_back.json'), $content);
-        return [];
-        $this->callBackInfo = file_get_contents(public_path('ten_asr_call_back.json'));
-        //return ['success' => 'true'];
-        dd($this->callBackInfo);
-        $callBackInfo = json_decode($this->callBackInfo, true);
-        $analyzeInfo = $this->dataFormat($callBackInfo);
-        dd($analyzeInfo);
+        //$content = json_encode($callBackInfo);
+        //file_put_contents(public_path('ten_asr_call_back.json'), $content);
+
+        // TODO 后期直接改成接收回调数据
+        $this->callBackInfo = file_get_contents('http://asr.hxsd.com/ten_asr_call_back.json');
+
+        $data = $this->dataFormat($this->callBackInfo);
+
+        // 存储回调识别信息
+        $this->setAsrRequest($data);
+
+        return $data;
     }
 
-    protected function dataFormat(array $info)
+    /**
+     * 对话处理
+     * @param $info 对话的JSON对象
+     * @return 格式化好的一通电话对话
+     * 对话中每句话以\n分隔，每句话遵守以下格式（其中_实际为空格）
+     * [开始时间,结束时间,声道编号]__对话文本
+     * 示例：
+     * [0:1.330,0:4.120,0]  喂你好崔勇
+     * 开始时间与结束时间m:s.ms 即 分钟:秒:毫秒，阿里云开始时间和结束时间为毫秒，因此需要做一次计算 m * 60 * 1000 + s.ms * 1000
+     * 腾讯云与阿里云识别结果相比，还缺少以下内容，可以暂时统一补0
+     * emotion_value 情绪值
+     * silence_duration 静音时间
+     * speech_rate 语速
+     */
+    protected function dataFormat(string $info)
     {
-        $analyzeInfo = [];
-        $text = trim(_isset($info, 'text'), '\"""');
+        $info = json_decode($info, true);
+        $result = $analyzeInfo = $u = $m = [];
+        $text = _isset($info, 'text');
+        // 过滤空格
+        $text = explode("\n", $text);
 
-        $text = explode("\r\n", $text);
+        foreach($text as $key => $value){
+            // 区分角色与文本
+            $vc = explode("]  ", $value);
+            $v1 = trim($vc[0], '[');
+            $v2 = $vc[1];
 
-        dd($info, $text);
+            // 区分开始和结束时间
+            $tc = explode(",", $v1);
+            $tb = explode(":", $tc[0]);
+            $te = explode(":", $tc[1]);
+            $channel = $tc[2];
+
+            $u = [];
+            // 计算时间（毫秒）
+            $u['channel_id'] = $channel;
+            $u['begin_time'] = round($tb[0] * 60 * 1000 + $tb[1] * 1000);
+            $u['end_time'] = round($te[0] * 60 * 1000 + $te[1] * 1000);
+            $u['emotion_value'] = 0;
+            $u['silence_duration'] = 0;
+            $u['speech_rate'] = 0;
+            $u['text'] = $v2;
+
+            $analyzeInfo[] = $u;
+        }
+        $jsonData = $info;
+        unset($jsonData['text']);
+
+        $result = [
+            'requestId' => $info['requestId'] ?? '',
+            'oss_path' => $info['audioUrl'] ?? '',
+            'analyze_info' => json_encode($analyzeInfo),
+            'json_data' => json_encode($jsonData),
+        ];
+
+        return $result;
+    }
+
+    protected function setAsrRequest(array $data)
+    {
+        // 处理数据
+        if(! $data) return [];
+
+        return $this->asrRep->saveAsrRequest([$data]);
     }
 }
