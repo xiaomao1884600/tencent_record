@@ -47,9 +47,9 @@ class AsrService extends BaseService
         //file_put_contents(public_path('ten_asr_call_back.json'), $content);
 
         // TODO 后期直接改成接收回调数据
-        $this->callBackInfo = file_get_contents('http://asr.hxsd.com/ten_asr_call_back.json');
+        //$callBackInfo = json_decode(file_get_contents('http://asr.hxsd.com/ten_asr_call_back.json'), true);
 
-        $data = $this->dataFormat($this->callBackInfo);
+        $data = $this->dataFormat($callBackInfo);
 
         // 存储回调识别信息
         $this->setAsrRequest($data);
@@ -71,9 +71,10 @@ class AsrService extends BaseService
      * silence_duration 静音时间
      * speech_rate 语速
      */
-    protected function dataFormat(string $info)
+    protected function dataFormat(array $info)
     {
-        $info = json_decode($info, true);
+        if(! $info) return [];
+
         $result = $analyzeInfo = $u = $m = [];
         $text = _isset($info, 'text');
         // 过滤空格
