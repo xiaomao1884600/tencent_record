@@ -43,8 +43,7 @@ class AsrService extends BaseService
      */
     public function asrCallBack(array $callBackInfo)
     {
-        //$content = json_encode($callBackInfo);
-        //file_put_contents(public_path('ten_asr_call_back.json'), $content);
+        file_put_contents(public_path('ten_asr_call_back.json'), json_encode($callBackInfo));
 
         // TODO 后期直接改成接收回调数据
         //$callBackInfo = json_decode(file_get_contents('http://asr.hxsd.com/ten_asr_call_back.json'), true);
@@ -54,7 +53,11 @@ class AsrService extends BaseService
         // 存储回调识别信息
         $this->setAsrRequest($data);
 
-        return $data;
+        // 回调响应成功后必须返回此格式
+        return [
+            'code' => 0,
+            'message' => '成功',
+        ];
     }
 
     /**
