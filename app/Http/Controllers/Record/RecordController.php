@@ -10,6 +10,7 @@ namespace App\Http\Controllers\Record;
 use App\Http\Controllers\Controller;
 use App\Service\Exceptions\ApiExceptions;
 use App\Service\Exceptions\Message;
+use App\Service\Record\AsrService;
 use App\Service\Record\RecordService;
 use Illuminate\Http\Request;
 
@@ -30,6 +31,21 @@ class RecordController extends Controller
     {
         try {
             return Message::success($recordService->setCallOut(requestData($request)));
+        } catch (\Exception $exception) {
+            return ApiExceptions::handle($exception);
+        }
+    }
+
+    /**
+     * ASR识别回调
+     * @param Request $request
+     * @param AsrService $asrService
+     * @return array|mixed
+     */
+    public function asrCallBack(Request $request, AsrService $asrService)
+    {
+        try {
+            return Message::success($asrService->asrCallBack(requestData($request)));
         } catch (\Exception $exception) {
             return ApiExceptions::handle($exception);
         }

@@ -18,12 +18,14 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 /**
-* 腾讯云oauth2回调地址
+* 腾讯云ASR回调地址
 */
-Route::any('tencentyun/asr/call_back', function(Request $request){
-    $content = json_encode($request->all()) . "\n";
-    file_put_contents(public_path('tencentyun_auth_call_back.json'), $content, FILE_APPEND);
-    return ['success' => true];
+
+Route::group(['namespace' => 'Record'], function(){
+
+    // 腾讯云ASR回调地址
+    Route::any('ten/asr/call_back', 'RecordController@asrCallBack');
+
 });
 
 /**
